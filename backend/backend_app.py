@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 
 app = Flask(__name__)
@@ -10,9 +10,33 @@ POSTS = [
 ]
 
 
-@app.route('/api/posts', methods=['GET'])
+@app.route('/api/posts', methods=['GET', 'POST'])
 def get_posts():
+    if request.method == 'POST':
+        new_post = request.get_json()
+        required_field = ["title", "content"]
+        if not new_post:
+            return jsonify({"error": "Invalid JSON"}), 400
+        for field in required_field:
+            if field not in new_post or not new_post[field].strip():
+                return jsonify({"error": f"Field{field} is required"}), 400
+        new_id = max((post['id'] for post in POSTS), default=0) + 1
+        new_post['id'] = new_id
+        POSTS.append(new_post)
+        return jsonify(POSTS), 201
     return jsonify(POSTS)
+
+@app.errorhandler(404)
+def not_found_error(error):
+    return jsonify({error: "Not found"}), 404
+
+@app.errorhandler(415)
+def not_found_error(error):
+    return jsonify({error: "Unsupported Media Type"}), 415
+
+@app.errorhandler(400)
+def not_found_error(error):
+    return jsonify({error: "Bad Request"}), 400
 
 
 if __name__ == '__main__':
