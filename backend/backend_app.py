@@ -1,5 +1,8 @@
+from reprlib import recursive_repr
+
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+from operator import itemgetter
 
 app = Flask(__name__)
 CORS(app)  # This will enable CORS for all routes
@@ -19,12 +22,26 @@ def get_posts():
             return jsonify({"error": "Invalid JSON"}), 400
         for field in required_field:
             if field not in new_post or not new_post[field].strip():
-                return jsonify({"error": f"Field{field} is required"}), 400
+                return jsonify({"error": f"Field: {field} is required"}), 400
         new_id = max((post['id'] for post in POSTS), default=0) + 1
         new_post['id'] = new_id
         POSTS.append(new_post)
         return jsonify(POSTS), 201
-    return jsonify(POSTS)
+    sort_posts = request.args.get('sort')
+    which_direction = request.args.get('direction')
+    if not sort_posts:
+        return jsonify(POSTS)
+    if sort_posts not in ['title', 'content']:
+        return jsonify({"error": "Invalid sort field"}), 400
+    reverse = False
+    if which_direction:
+        if which_direction == 'desc':
+            reverse= True
+        elif which_direction != 'asc':
+            return jsonify({"error": "Invalid sort direction"}), 400
+    sorted_list = sorted(POSTS, key=itemgetter(sort_posts), reverse=reverse)
+    return jsonify(sorted_list)
+
 
 
 @app.route('/api/posts/<int:id>', methods=['DELETE'])
