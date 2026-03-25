@@ -36,6 +36,25 @@ def delete_post(id):
             POSTS.remove(post)
     return jsonify(POSTS), 200
 
+def find_post_by_id(id):
+    for post in POSTS:
+        if post['id'] == id:
+            return True
+    return None
+
+@app.route('/api/posts/<int:id>', methods=['PUT'])
+def update_post(id):
+    found_post = next((post for post in POSTS if post['id'] == id), None)
+    if not found_post:
+        return jsonify({"error": f"No post with ID {id} found"}), 404
+    new_content = request.get_json()
+    if not new_content:
+        return jsonify({"error": "Invalid JSON"}), 400
+    if "title" in new_content and new_content["title"].strip():
+        found_post["title"] = new_content["title"]
+    if "content" in new_content and new_content["content"].strip():
+        found_post["content"] = new_content["content"]
+    return jsonify(found_post), 200
 
 
 @app.errorhandler(404)
