@@ -37,8 +37,13 @@ def get_posts():
                 return jsonify({"error": f"Field: {field} is required"}), 400
         new_id = max((post['id'] for post in POSTS), default=0) + 1
         new_post['id'] = new_id
-        POSTS.append(new_post)
-        return jsonify(new_post), 201
+        post = {
+            "id": new_id,
+            "title": new_post["title"],
+            "content": new_post["content"]
+        }
+        POSTS.append(post)
+        return jsonify(post), 201
     else:
         sort_posts = request.args.get('sort')
         which_direction = request.args.get('direction')
@@ -60,17 +65,11 @@ def get_posts():
 @app.route('/api/posts/<int:id>', methods=['DELETE'])
 def delete_post(id):
     for post in POSTS:
-        if not post['id']:
-            return jsonify({"error": f"No ID: {id} found"}), 400
-        elif post['id'] == id:
-            POSTS.remove(post)
-    return jsonify(POSTS), 200
-
-def find_post_by_id(id):
-    for post in POSTS:
         if post['id'] == id:
-            return True
-    return None
+            POSTS.remove(post)
+            return jsonify({"message": f"The post with ID: {id} is deleted!"}), 200
+    return jsonify({
+        "error": f"No post with ID {id} found"}), 404
 
 @app.route('/api/posts/<int:id>', methods=['PUT'])
 def update_post(id):
@@ -89,12 +88,15 @@ def update_post(id):
 
 @app.route('/api/posts/search', methods=['GET'])
 def search_posts():
+    post_list = []
     title = request.args.get('title')
     content = request.args.get('content')
     for post in POSTS:
-        if post['title'] == title or post['content'] == content:
-            return jsonify(post)
-    return jsonify(POSTS)
+        if title and title.lower() in post['title'].lower():
+            post_list.append(post)
+        elif content and content.lower() in post['content'].lower():
+            post_list.append(post)
+    return jsonify(post_list), 200
 
 @app.errorhandler(404)
 def not_found_error(error):
